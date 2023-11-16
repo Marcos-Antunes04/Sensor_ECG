@@ -1,45 +1,69 @@
-const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-  <style>
+const char* html = R"rawliteral(
+  <html>
+    <head>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+      <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+    
+    <style>
     html {
-     font-family: Arial;
-     display: inline-block;
-     margin: 0px auto;
-     text-align: center;
+      font-family: Arial;
+      display: inline-block;
+      margin: 0px auto;
+      text-align: center;
     }
-    h2 { font-size: 3.0rem; }
+    h1 { font-size: 3.0rem; }
     p { font-size: 3.0rem; }
     .units { font-size: 1.2rem; }
-    .dht-labels{
+    .dht-labels {
       font-size: 1.5rem;
-      vertical-align:middle;
+      vertical-align: middle;
       padding-bottom: 15px;
     }
   </style>
-</head>
-<body>
-  <h2>ESP32 DHT Server</h2>
-  <p>
-    <i class="fas fa-thermometer-half" style="color:#059e8a;"></i> 
-    <span class="dht-labels">Temperature</span> 
-    <span id="temperature">%TEMPERATURE%</span>
-    <sup class="units">&deg;C</sup>
-  </p>
-</body>
-<script>
-setInterval(function ( ) {
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("temperature").innerHTML = this.responseText;
-    }
-  };
-  xhttp.open("GET", "/temperature", true);
-  xhttp.send();
-}, 5000 ) ;
+    
+    </head>
+    <body>
+      <div >
+      <h1>ESP32 ECG</h1>
+      <p>
+      <i class="fas fa-heartbeat heartbeat-icon" style="color:red"></i>
+      </p>
+      </div>
+      <div id='chart'></div>
+      <script>
+        var xValues = [];
+        var yValues = [];
+        var startTime = new Date().getTime();
 
-</script>
-</html>)rawliteral";
+        function updateGraph() {
+          fetch('/data')
+            .then(response => response.json())
+            .then(data => {
+              var currentTime = new Date().getTime() - startTime;
+              xValues.push(currentTime);
+              yValues.push(data.value);
+
+              // Manter apenas os últimos 10 segundos de dados
+              var removeIndex = 0;
+              for (var i = 0; i < xValues.length; i++) {
+                if (xValues[i] < (currentTime - 10000)) {
+                  removeIndex = i;
+                } else {
+                  break;
+                }
+              }
+              if (removeIndex > 0) {
+                xValues.splice(0, removeIndex);
+                yValues.splice(0, removeIndex);
+              }
+
+              Plotly.newPlot('chart', [{x: xValues, y: yValues}], {title: 'Leitura Eletrocardiograma' , line:{color:'red'}});
+              Plotly.restyle(chart, {line: {color: 'red'}});
+            });
+        }
+
+        var graphUpdate = setInterval(updateGraph, 100);
+      </script>
+    </body>
+  </html>
+)rawliteral";
