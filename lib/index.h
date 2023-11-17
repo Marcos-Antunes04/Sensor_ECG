@@ -62,7 +62,7 @@ const char* html = R"rawliteral(
             });
         }
 
-        var graphUpdate = setInterval(updateGraph, 100);
+        var graphUpdate = setInterval(updateGraph, 1);
       </script>
     </body>
   </html>
